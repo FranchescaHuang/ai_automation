@@ -25,6 +25,14 @@ def crawl_book_data(page_num=1):
     """
     豆瓣图书采集工具，page_num：页码（每页25本）
     """
+    # 兼容处理：AI Agent 可能会传入字符串格式的页码，甚至是 "page_num=1" 这种格式
+    try:
+        if isinstance(page_num, str) and "=" in page_num:
+            page_num = page_num.split("=")[-1]
+        page_num = int(page_num)
+    except (ValueError, TypeError):
+        page_num = 1
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
@@ -35,7 +43,7 @@ def crawl_book_data(page_num=1):
         book_list = []
         for book_item in page.locator(".item").all():
             title = book_item.locator(".pl2 a").get_attribute("title") or "未知书名"
-            author_info = book_item.locator(".pl").inner_text() or "未知信息"
+            author_info = book_item.locator("p.pl").inner_text() or "未知信息"
             rating = book_item.locator(".rating_nums").inner_text() or "0.0"
             book_list.append({
                 "书名": title,
@@ -60,8 +68,9 @@ tools = [
 agent = initialize_agent(
     tools,
     llm,
-    agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-    verbose=True  # 打印AI Agent的思考过程，新手便于学习
+    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+    verbose=True,  # 打印AI Agent的思考过程，新手便于学习
+    handle_parsing_errors=True  # 自动处理大模型输出格式错误
 )
 
 # 第五步：AI Agent执行任务（用户指令自然语言即可，新手无需写复杂规则）
@@ -70,7 +79,8 @@ def ai_book_assistant(user_prompt):
     raw_data = agent.run(user_prompt)
     # 2. AI Agent 智能清洗数据（直接让大模型返回结构化数据）
     clean_prompt = f"请清洗以下图书数据，过滤无效信息，统一格式，返回JSON格式，去重：{raw_data}"
-    clean_data = llm.predict(clean_prompt)
+    response = llm.invoke(clean_prompt)
+    clean_data = response.content
     # 3. 转换为DataFrame并导出CSV
     import json
     try:
