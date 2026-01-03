@@ -1,14 +1,20 @@
 from playwright.sync_api import sync_playwright
-from langchain.agents import initialize_agent, AgentType
-from langchain.chat_models import ChatOpenAI
-from langchain.tools import Tool
+from langchain_classic.agents import initialize_agent, AgentType
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import Tool
 import pandas as pd
 import os
 
-# 第一步：设置AI Agent（替换为自己的API Key，国内模型可替换）
-os.environ["OPENAI_API_KEY"] = "你的OpenAI API Key"
-llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo")
-# gpt-3.5足够新手使用，成本低
+# 第一步：设置AI Agent（使用环境变量获取 API Key）
+# 请确保已设置环境变量 DEEPSEEK_API_KEY
+api_key = os.getenv("DEEPSEEK_API_KEY")
+llm = ChatOpenAI(
+    model="deepseek-chat",
+    api_key=api_key,
+    base_url="https://api.deepseek.com",
+    temperature=0
+)
+# DeepSeek 提供高性能且价格亲民的模型服务
 
 # 第二步：封装Playwright采集工具（给AI Agent调用）
 def crawl_book_data(page_num=1):
