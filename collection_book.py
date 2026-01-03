@@ -6,8 +6,12 @@ import pandas as pd
 import os
 
 # 第一步：设置AI Agent（使用环境变量获取 API Key）
-# 请确保已设置环境变量 DEEPSEEK_API_KEY
+# 请确保已在系统中设置环境变量 DEEPSEEK_API_KEY
 api_key = os.getenv("DEEPSEEK_API_KEY")
+
+if not api_key:
+    raise ValueError("请设置环境变量 DEEPSEEK_API_KEY 以运行程序。")
+
 llm = ChatOpenAI(
     model="deepseek-chat",
     api_key=api_key,
